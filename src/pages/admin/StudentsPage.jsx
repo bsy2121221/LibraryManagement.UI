@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  Button,
   Chip,
   InputAdornment,
   MenuItem,
@@ -15,12 +16,14 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import PersonAdd from '@mui/icons-material/PersonAdd'
 import Search from '@mui/icons-material/Search'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { studentsApi } from '../../api/endpoints'
 import { getErrorMessage } from '../../utils/errors'
 import { formatDate } from '../../utils/format'
+import AddStudentDialog from './AddStudentDialog'
 
 // Filter values -> API query values (undefined = no filter)
 const ACCOUNT_FILTERS = { all: undefined, active: true, inactive: false }
@@ -34,6 +37,7 @@ export default function StudentsPage() {
   const [seat, setSeat] = useState('all')
   const [students, setStudents] = useState(null)
   const [error, setError] = useState('')
+  const [adding, setAdding] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -56,12 +60,17 @@ export default function StudentsPage() {
 
   return (
     <>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          Students
-        </Typography>
-        <Typography color="text.secondary">Click a student to edit their details, reset the password or change their seat.</Typography>
-      </Box>
+      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            Students
+          </Typography>
+          <Typography color="text.secondary">Click a student to edit their details, reset the password or change their seat.</Typography>
+        </Box>
+        <Button variant="contained" startIcon={<PersonAdd />} onClick={() => setAdding(true)}>
+          Add student
+        </Button>
+      </Stack>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
         <TextField
@@ -147,6 +156,17 @@ export default function StudentsPage() {
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+
+      {adding && (
+        <AddStudentDialog
+          onClose={() => setAdding(false)}
+          onCreated={(detail, password, assignSeatNext) =>
+            navigate(`/admin/students/${detail.profile.id}${assignSeatNext ? '?assign=1' : ''}`, {
+              state: { created: { password, mobile: detail.profile.mobile } },
+            })
+          }
+        />
       )}
     </>
   )

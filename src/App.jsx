@@ -12,6 +12,9 @@ import SeatsPage from './pages/SeatsPage'
 import BookingsPage from './pages/admin/BookingsPage'
 import SectionDesignerPage from './pages/admin/SectionDesignerPage'
 import SectionsPage from './pages/admin/SectionsPage'
+import FeesPage from './pages/admin/FeesPage'
+import MessagesPage from './pages/admin/MessagesPage'
+import NotificationSettingsPage from './pages/admin/NotificationSettingsPage'
 import SettingsPage from './pages/admin/SettingsPage'
 import StudentDetailPage from './pages/admin/StudentDetailPage'
 import StudentsPage from './pages/admin/StudentsPage'
@@ -62,6 +65,9 @@ const router = createBrowserRouter([
           { path: 'students', element: <StudentsPage /> },
           { path: 'students/:id', element: <StudentDetailPage /> },
           { path: 'settings', element: <SettingsPage /> },
+          { path: 'fees', element: <FeesPage /> },
+          { path: 'messages', element: <MessagesPage /> },
+          { path: 'notification-settings', element: <NotificationSettingsPage /> },
         ],
       },
     ],

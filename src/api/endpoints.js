@@ -56,10 +56,48 @@ export const studentsApi = {
   get: (id) => api.get(`/admin/students/${id}`).then((r) => r.data),
   update: (id, body) => api.put(`/admin/students/${id}`, body).then((r) => r.data),
   resetPassword: (id, newPassword) => api.post(`/admin/students/${id}/reset-password`, { newPassword }),
+  // Walk-in student registered by the admin (returns the student detail)
+  create: (body) => api.post('/admin/students', body).then((r) => r.data),
+  // body: { seatId, startDate?, amount?, paidAtDesk, note? }
+  assignSeat: (id, body) => api.post(`/admin/students/${id}/assign-seat`, body).then((r) => r.data),
 }
 
 export const adminSettingsApi = {
   getAll: () => api.get('/admin/settings').then((r) => r.data),
   // values: { MonthlyFee: '1200', ... } - only the changed ones
   update: (values) => api.put('/admin/settings', { values }).then((r) => r.data),
+}
+
+// Student monthly fees (pay = createPaymentOrder, then the same checkout + /payments/verify as booking)
+export const feesApi = {
+  mine: () => api.get('/fees/me').then((r) => r.data),
+  createPaymentOrder: (id) => api.post(`/fees/${id}/payment-order`).then((r) => r.data),
+}
+
+export const adminFeesApi = {
+  // status: undefined = unpaid (Due + Overdue), or 'Due' / 'Overdue' / 'Paid' / 'Cancelled'
+  getAll: ({ status, search } = {}) =>
+    api.get('/admin/fees', { params: { status: status || undefined, search: search || undefined } }).then((r) => r.data),
+  markPaid: (id, note) => api.post(`/admin/fees/${id}/mark-paid`, { note: note || null }).then((r) => r.data),
+  // body: { studentId, periodStart, periodEnd?, amount?, dueDate?, paidAtDesk, note? }
+  create: (body) => api.post('/admin/fees', body).then((r) => r.data),
+}
+
+// Messages to students (queued, sent by the background job every minute)
+export const notificationsApi = {
+  getAll: ({ status, channel, eventType, studentId, search } = {}) =>
+    api
+      .get('/admin/notifications', {
+        params: { status: status || undefined, channel: channel || undefined, eventType: eventType || undefined, studentId, search: search || undefined },
+      })
+      .then((r) => r.data),
+  summary: () => api.get('/admin/notifications/summary').then((r) => r.data),
+  retry: (id) => api.post(`/admin/notifications/${id}/retry`),
+  cancel: (id) => api.post(`/admin/notifications/${id}/cancel`),
+  events: () => api.get('/admin/notifications/events').then((r) => r.data),
+  saveEvent: (eventType, channels) => api.put(`/admin/notifications/events/${eventType}`, { channels }).then((r) => r.data),
+  rules: () => api.get('/admin/notifications/rules').then((r) => r.data),
+  createRule: (body) => api.post('/admin/notifications/rules', body).then((r) => r.data),
+  updateRule: (id, body) => api.put(`/admin/notifications/rules/${id}`, body).then((r) => r.data),
+  deleteRule: (id) => api.delete(`/admin/notifications/rules/${id}`),
 }

@@ -1,12 +1,11 @@
 import { Alert, Box, Button, CircularProgress, Container, Divider, LinearProgress, Paper, Stack, Typography } from '@mui/material'
 import Timer from '@mui/icons-material/Timer'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
-import { bookingsApi, paymentsApi, settingsApi } from '../api/endpoints'
+import { bookingsApi, settingsApi } from '../api/endpoints'
+import PayButton from '../components/PayButton'
 import { getErrorMessage } from '../utils/errors'
 import { formatCountdown, formatMoney } from '../utils/format'
-import { openRazorpayCheckout } from '../utils/razorpay'
-import MockPaymentDialog from './MockPaymentDialog'
 
 // Seat is held: show the countdown and let the student pay (Mock dialog or Razorpay Checkout).
 export default function CheckoutPage() {
@@ -18,9 +17,8 @@ export default function CheckoutPage() {
   const [deadline, setDeadline] = useState(null) // browser time when the hold ends
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [totalSeconds, setTotalSeconds] = useState(1)
-  const [busy, setBusy] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [error, setError] = useState('')
-  const [mockOrder, setMockOrder] = useState(null)
   const [seatLost, setSeatLost] = useState('')
 
   useEffect(() => {
@@ -50,68 +48,8 @@ export default function CheckoutPage() {
     return () => clearInterval(timer)
   }, [deadline])
 
-  const handleSuccess = useCallback(
-    async (payment) => {
-      setMockOrder(null)
-      setBusy(true)
-      try {
-        const result = await paymentsApi.verify(payment)
-        if (result.outcome === 'SeatLost') {
-          setSeatLost(result.message)
-        } else {
-          navigate('/my-seat', { replace: true, state: { message: result.message } })
-        }
-      } catch (err) {
-        setError(getErrorMessage(err))
-      } finally {
-        setBusy(false)
-      }
-    },
-    [navigate],
-  )
-
-  const handleFailure = useCallback(async (order, reason, paymentId) => {
-    setMockOrder(null)
-    setBusy(false)
-    setError(`Payment not completed: ${reason}. You can try again while the seat is held.`)
-    try {
-      await paymentsApi.failed({ orderId: order.orderId, paymentId, reason })
-    } catch {
-      // Only bookkeeping; the student can still retry
-    }
-  }, [])
-
-  const handlePay = async () => {
-    setBusy(true)
-    setError('')
-    let order
-    try {
-      order = await bookingsApi.createPaymentOrder(booking.id)
-    } catch (err) {
-      setBusy(false)
-      setError(getErrorMessage(err))
-      return
-    }
-
-    if (order.provider === 'Mock') {
-      setMockOrder(order)
-      return
-    }
-    try {
-      const payment = await openRazorpayCheckout(order)
-      await handleSuccess(payment)
-    } catch (failure) {
-      if (failure instanceof Error) {
-        setBusy(false)
-        setError(failure.message)
-      } else {
-        handleFailure(order, failure.reason, failure.paymentId)
-      }
-    }
-  }
-
   const handleCancel = async () => {
-    setBusy(true)
+    setCancelling(true)
     try {
       await bookingsApi.cancelHold(booking.id)
     } catch {
@@ -183,23 +121,24 @@ export default function CheckoutPage() {
 
             {error && <Alert severity="error">{error}</Alert>}
 
-            <Button variant="contained" size="large" onClick={handlePay} disabled={busy}>
-              {busy ? 'Processing…' : 'Pay with UPI'}
-            </Button>
-            <Button color="inherit" onClick={handleCancel} disabled={busy}>
+            <PayButton
+              size="large"
+              disabled={cancelling}
+              createOrder={() => {
+                setError('')
+                return bookingsApi.createPaymentOrder(booking.id)
+              }}
+              onPaid={(result) => navigate('/my-seat', { replace: true, state: { message: result.message } })}
+              onProblem={(message, refundCase) => (refundCase ? setSeatLost(message) : setError(message))}
+            >
+              Pay with UPI
+            </PayButton>
+            <Button color="inherit" onClick={handleCancel} disabled={cancelling}>
               Cancel and release seat
             </Button>
           </Stack>
         )}
       </Paper>
-
-      {mockOrder && (
-        <MockPaymentDialog
-          order={mockOrder}
-          onSuccess={handleSuccess}
-          onFailure={(reason, paymentId) => handleFailure(mockOrder, reason, paymentId)}
-        />
-      )}
     </Container>
   )
 }

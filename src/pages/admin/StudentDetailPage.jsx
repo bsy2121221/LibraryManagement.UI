@@ -31,11 +31,17 @@ import Key from '@mui/icons-material/Key'
 import PersonRemove from '@mui/icons-material/PersonRemove'
 import Save from '@mui/icons-material/Save'
 import SwapHoriz from '@mui/icons-material/SwapHoriz'
+import EventSeat from '@mui/icons-material/EventSeat'
+import Add from '@mui/icons-material/Add'
 import { useCallback, useEffect, useState } from 'react'
-import { Link as RouterLink, useParams } from 'react-router-dom'
-import { studentsApi } from '../../api/endpoints'
+import { Link as RouterLink, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { notificationsApi, studentsApi } from '../../api/endpoints'
 import { getErrorMessage, getFieldErrors } from '../../utils/errors'
-import { formatDate, formatDateTime, formatMoney } from '../../utils/format'
+import { FEE_STATUS_CHIPS, formatDate, formatDateTime, formatMoney, formatPeriod } from '../../utils/format'
+import AddFeeDialog from './AddFeeDialog'
+import AssignSeatDialog from './AssignSeatDialog'
+import MarkPaidDialog from './MarkPaidDialog'
+import MessagesTable from './MessagesTable'
 import MoveSeatDialog from './MoveSeatDialog'
 import ReleaseSeatDialog from './ReleaseSeatDialog'
 
@@ -57,6 +63,11 @@ const toForm = (profile) => ({
 
 export default function StudentDetailPage() {
   const { id } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Shown once right after the admin registered this student, so the password can be told to them
+  const [created, setCreated] = useState(location.state?.created ?? null)
   const [detail, setDetail] = useState(null)
   const [form, setForm] = useState(null)
   const [fieldErrors, setFieldErrors] = useState({})
@@ -64,7 +75,9 @@ export default function StudentDetailPage() {
   const [toast, setToast] = useState('')
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState(0)
-  const [dialog, setDialog] = useState(null) // 'move' | 'release' | 'password'
+  const [dialog, setDialog] = useState(() => (searchParams.get('assign') === '1' ? 'assign' : null)) // 'move' | 'release' | 'password' | 'assign' | 'fee'
+  const [payingFee, setPayingFee] = useState(null)
+  const [messages, setMessages] = useState(null)
 
   const applyDetail = useCallback((data) => {
     setDetail(data)
@@ -85,6 +98,25 @@ export default function StudentDetailPage() {
     load()
   }, [load])
 
+  // Do not keep the password in browser history, and do not reopen 'assign seat' on refresh
+  useEffect(() => {
+    if (location.state?.created) navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+    if (searchParams.get('assign')) setSearchParams({}, { replace: true })
+  }, [location, navigate, searchParams, setSearchParams])
+
+  // Messages are loaded when their tab is opened
+  const loadMessages = useCallback(async () => {
+    try {
+      setMessages(await notificationsApi.getAll({ studentId: id }))
+    } catch (err) {
+      setError(getErrorMessage(err))
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (tab === 3) loadMessages()
+  }, [tab, loadMessages])
+
   if (!detail) {
     return error ? (
       <Alert severity="error">{error}</Alert>
@@ -95,7 +127,7 @@ export default function StudentDetailPage() {
     )
   }
 
-  const { profile, currentBooking, seatHistory, payments } = detail
+  const { profile, currentBooking, seatHistory, payments, fees } = detail
   const isDirty = JSON.stringify(form) !== JSON.stringify(toForm(profile))
 
   const setField = (field) => (event) => {
@@ -149,6 +181,12 @@ export default function StudentDetailPage() {
         </Button>
       </Stack>
 
+      {created && (
+        <Alert severity="success" onClose={() => setCreated(null)} sx={{ mb: 2 }}>
+          Student registered. Tell them to log in with mobile <b>{created.mobile}</b> and password{' '}
+          <b style={{ fontFamily: 'monospace', fontSize: 16 }}>{created.password}</b>. This password is shown only now.
+        </Alert>
+      )}
       {error && (
         <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>
           {error}
@@ -205,7 +243,24 @@ export default function StudentDetailPage() {
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
             Seat
           </Typography>
-          {!currentBooking && <Typography color="text.secondary">No seat at the moment.</Typography>}
+          {!currentBooking && (
+            <Stack spacing={1.5} sx={{ alignItems: 'flex-start' }}>
+              <Typography color="text.secondary">No seat at the moment.</Typography>
+              <Button
+                variant="contained"
+                startIcon={<EventSeat />}
+                onClick={() => setDialog('assign')}
+                disabled={!profile.isActive}
+              >
+                Assign seat
+              </Button>
+              {!profile.isActive && (
+                <Typography variant="caption" color="text.secondary">
+                  Activate the account first.
+                </Typography>
+              )}
+            </Stack>
+          )}
           {currentBooking && (
             <Stack spacing={1.5}>
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
@@ -244,6 +299,8 @@ export default function StudentDetailPage() {
         <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ px: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Tab label={`Seat history (${seatHistory.length})`} />
           <Tab label={`Payments (${payments.length})`} />
+          <Tab label={`Fees (${fees.length})`} />
+          <Tab label="Messages" />
         </Tabs>
         <Box sx={{ p: 2, overflowX: 'auto' }}>
           {tab === 0 &&
@@ -319,9 +376,103 @@ export default function StudentDetailPage() {
                 </TableBody>
               </Table>
             ))}
+
+          {tab === 2 && currentBooking?.status === 'Active' && (
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+              <Button size="small" startIcon={<Add />} onClick={() => setDialog('fee')}>
+                Add fee
+              </Button>
+            </Box>
+          )}
+          {tab === 2 &&
+            (fees.length === 0 ? (
+              <Typography color="text.secondary">No fees yet.</Typography>
+            ) : (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Period</TableCell>
+                    <TableCell>Seat</TableCell>
+                    <TableCell>Due</TableCell>
+                    <TableCell align="right">Amount</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {fees.map((f) => (
+                    <TableRow key={f.id}>
+                      <TableCell>{formatPeriod(f.periodStart, f.periodEnd)}</TableCell>
+                      <TableCell>{f.seatLabel}</TableCell>
+                      <TableCell>{formatDate(f.dueDate)}</TableCell>
+                      <TableCell align="right">{formatMoney(f.amount)}</TableCell>
+                      <TableCell>
+                        <Chip size="small" {...FEE_STATUS_CHIPS[f.status]} />
+                        {f.status === 'Paid' && (
+                          <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                            {formatDate(f.paidAt)} · {f.paidVia === 'Cash' ? 'at desk' : 'online'}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {f.isPayable && (
+                          <Button size="small" onClick={() => setPayingFee(f)}>
+                            Record payment
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ))}
+
+          {tab === 3 &&
+            (!messages ? (
+              <CircularProgress size={24} />
+            ) : messages.length === 0 ? (
+              <Typography color="text.secondary">No messages yet.</Typography>
+            ) : (
+              <MessagesTable
+                messages={messages}
+                showStudent={false}
+                onRetry={async (m) => {
+                  await notificationsApi.retry(m.id)
+                  loadMessages()
+                }}
+                onCancel={async (m) => {
+                  await notificationsApi.cancel(m.id)
+                  loadMessages()
+                }}
+              />
+            ))}
         </Box>
       </Paper>
 
+      {payingFee && (
+        <MarkPaidDialog
+          fee={{ ...payingFee, studentName: profile.fullName }}
+          onClose={() => setPayingFee(null)}
+          onDone={() => {
+            setPayingFee(null)
+            setToast('Payment recorded. The student will get a confirmation message.')
+            load()
+          }}
+        />
+      )}
+      {dialog === 'assign' && (
+        <AssignSeatDialog student={profile} onClose={() => setDialog(null)} onAssigned={afterSeatChange} />
+      )}
+      {dialog === 'fee' && (
+        <AddFeeDialog
+          student={{ id: profile.id, fullName: profile.fullName, nextDueDate: currentBooking?.nextDueDate }}
+          onClose={() => setDialog(null)}
+          onAdded={(message) => {
+            setTab(2)
+            afterSeatChange(message)
+          }}
+        />
+      )}
       {dialog === 'move' && <MoveSeatDialog booking={currentBooking} onClose={() => setDialog(null)} onMoved={afterSeatChange} />}
       {dialog === 'release' && <ReleaseSeatDialog booking={currentBooking} onClose={() => setDialog(null)} onReleased={afterSeatChange} />}
       {dialog === 'password' && (

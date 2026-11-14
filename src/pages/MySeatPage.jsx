@@ -1,23 +1,33 @@
 import { Alert, Box, Button, Chip, CircularProgress, Container, Divider, Paper, Stack, Typography } from '@mui/material'
 import EventSeat from '@mui/icons-material/EventSeat'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
-import { bookingsApi } from '../api/endpoints'
+import { bookingsApi, feesApi } from '../api/endpoints'
+import PayButton from '../components/PayButton'
 import { getErrorMessage } from '../utils/errors'
-import { formatDate } from '../utils/format'
+import { FEE_STATUS_CHIPS, formatDate, formatMoney, formatPeriod } from '../utils/format'
 
-// The student's own seat. Fee history and pay-next-month come with the fees step.
+// The student's own seat and monthly fees
 export default function MySeatPage() {
   const location = useLocation()
   const [booking, setBooking] = useState(undefined)
+  const [fees, setFees] = useState([])
+  const [message, setMessage] = useState(location.state?.message ?? '')
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    bookingsApi
-      .me()
-      .then(setBooking)
-      .catch((err) => setError(getErrorMessage(err)))
+  const load = useCallback(async () => {
+    try {
+      const [current, myFees] = await Promise.all([bookingsApi.me(), feesApi.mine()])
+      setBooking(current)
+      setFees(myFees)
+    } catch (err) {
+      setError(getErrorMessage(err))
+    }
   }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   if (booking === undefined && !error) {
     return (
@@ -27,15 +37,17 @@ export default function MySeatPage() {
     )
   }
 
+  const unpaid = fees.filter((f) => f.isPayable)
+
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
-      {location.state?.message && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {location.state.message}
+      {message && (
+        <Alert severity="success" onClose={() => setMessage('')} sx={{ mb: 2 }}>
+          {message}
         </Alert>
       )}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
@@ -47,7 +59,7 @@ export default function MySeatPage() {
 
         {!booking && (
           <Stack spacing={2}>
-            <Typography color="text.secondary">You have not booked a seat yet.</Typography>
+            <Typography color="text.secondary">You do not have a seat at the moment.</Typography>
             <Button component={RouterLink} to="/seats" variant="contained">
               Book a seat
             </Button>
@@ -83,9 +95,69 @@ export default function MySeatPage() {
             <Divider />
             <Row label="Member since" value={formatDate(booking.startDate)} />
             <Row label="Next fee due" value={formatDate(booking.nextDueDate)} />
+            {booking.hasOverdueFee && <Alert severity="error">Your fee is overdue. Please pay now to keep your seat.</Alert>}
           </Stack>
         )}
       </Paper>
+
+      {unpaid.length > 0 && (
+        <Paper variant="outlined" sx={{ p: 3, mt: 2, borderColor: unpaid.some((f) => f.status === 'Overdue') ? 'error.main' : undefined }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+            Fees to pay
+          </Typography>
+          <Stack spacing={2} divider={<Divider />}>
+            {unpaid.map((fee) => (
+              <Stack key={fee.id} direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography sx={{ fontWeight: 600 }}>{formatPeriod(fee.periodStart, fee.periodEnd)}</Typography>
+                  <Typography variant="body2" color={fee.status === 'Overdue' ? 'error' : 'text.secondary'}>
+                    Due {formatDate(fee.dueDate)} · {FEE_STATUS_CHIPS[fee.status].label}
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontWeight: 700 }}>{formatMoney(fee.amount)}</Typography>
+                <PayButton
+                  createOrder={() => {
+                    setError('')
+                    return feesApi.createPaymentOrder(fee.id)
+                  }}
+                  onPaid={(result) => {
+                    setMessage(result.message)
+                    load()
+                  }}
+                  onProblem={(text) => {
+                    setError(text)
+                    load()
+                  }}
+                >
+                  Pay
+                </PayButton>
+              </Stack>
+            ))}
+          </Stack>
+        </Paper>
+      )}
+
+      {fees.some((f) => !f.isPayable) && (
+        <Paper variant="outlined" sx={{ p: 3, mt: 2 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+            Fee history
+          </Typography>
+          <Stack spacing={1.5}>
+            {fees
+              .filter((f) => !f.isPayable)
+              .map((fee) => (
+                <Stack key={fee.id} direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                  <Typography sx={{ flexGrow: 1 }}>{formatPeriod(fee.periodStart, fee.periodEnd)}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {fee.status === 'Paid' ? `Paid ${formatDate(fee.paidAt)}` : ''}
+                  </Typography>
+                  <Typography sx={{ minWidth: 80, textAlign: 'right' }}>{formatMoney(fee.amount)}</Typography>
+                  <Chip size="small" {...FEE_STATUS_CHIPS[fee.status]} />
+                </Stack>
+              ))}
+          </Stack>
+        </Paper>
+      )}
     </Container>
   )
 }

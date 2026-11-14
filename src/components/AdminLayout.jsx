@@ -16,16 +16,22 @@ import Logout from '@mui/icons-material/Logout'
 import People from '@mui/icons-material/People'
 import School from '@mui/icons-material/School'
 import Settings from '@mui/icons-material/Settings'
+import Payments from '@mui/icons-material/Payments'
+import Sms from '@mui/icons-material/Sms'
+import NotificationsActive from '@mui/icons-material/NotificationsActive'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 
 const DRAWER_WIDTH = 230
 
-// Menu entries for the admin area. Later steps add Notifications and Home page.
+// Menu entries for the admin area. A later step adds the Home page builder.
 const NAV_ITEMS = [
   { to: '/admin/sections', label: 'Sections & seats', icon: <EventSeat /> },
   { to: '/admin/bookings', label: 'Students on seats', icon: <People /> },
   { to: '/admin/students', label: 'Students', icon: <School /> },
+  { to: '/admin/fees', label: 'Fees', icon: <Payments /> },
+  { to: '/admin/messages', label: 'Messages', icon: <Sms /> },
+  { to: '/admin/notification-settings', label: 'Message settings', icon: <NotificationsActive /> },
   { to: '/admin/settings', label: 'Settings', icon: <Settings /> },
 ]
 
