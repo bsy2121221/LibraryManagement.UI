@@ -101,3 +101,33 @@ export const notificationsApi = {
   updateRule: (id, body) => api.put(`/admin/notifications/rules/${id}`, body).then((r) => r.data),
   deleteRule: (id) => api.delete(`/admin/notifications/rules/${id}`),
 }
+
+// Home page designed in the admin builder. Resolves to null when nothing is published (API returns 204).
+export const homePageApi = {
+  get: () => api.get('/home-page').then((r) => (r.status === 204 ? null : r.data)),
+}
+
+export const adminHomePageApi = {
+  // { latest: version | null, liveVersion }
+  get: () => api.get('/admin/home-page').then((r) => r.data),
+  // Every save is a new version; publish = true also makes it live
+  save: (layout, publish) => api.post('/admin/home-page', { layout, publish }).then((r) => r.data),
+  versions: () => api.get('/admin/home-page/versions').then((r) => r.data),
+  version: (id) => api.get(`/admin/home-page/versions/${id}`).then((r) => r.data),
+  publish: (id) => api.post(`/admin/home-page/versions/${id}/publish`).then((r) => r.data),
+}
+
+// Uploaded images (JPG, PNG, WEBP, GIF)
+export const mediaApi = {
+  getAll: () => api.get('/admin/media').then((r) => r.data),
+  upload: (file, onProgress) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api
+      .post('/admin/media', form, {
+        onUploadProgress: (e) => onProgress?.(e.total ? Math.round((e.loaded * 100) / e.total) : 0),
+      })
+      .then((r) => r.data)
+  },
+  remove: (id) => api.delete(`/admin/media/${id}`),
+}

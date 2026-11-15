@@ -1,14 +1,13 @@
-import { AppBar, Box, Button, Container, IconButton, Menu, MenuItem, Toolbar, Typography } from '@mui/material'
+import { AppBar, Box, Button, IconButton, Menu, MenuItem, Toolbar, Typography } from '@mui/material'
 import AccountCircle from '@mui/icons-material/AccountCircle'
 import LocalLibrary from '@mui/icons-material/LocalLibrary'
 import { useState } from 'react'
 import { Link as RouterLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { usePublicSettings } from '../hooks/usePublicSettings'
+import SiteFooter from './SiteFooter'
 
-const CURRENT_YEAR = new Date().getFullYear()
-
-// Navbar + page content for everything visitors and students see
+// Navbar + page content + fixed footer for everything visitors and students see
 export default function PublicLayout() {
   const { user, isLoggedIn, isAdmin, logout } = useAuth()
   const navigate = useNavigate()
@@ -76,13 +75,7 @@ export default function PublicLayout() {
         <Outlet />
       </Box>
 
-      <Box component="footer" sx={{ py: 3, borderTop: 1, borderColor: 'divider' }}>
-        <Container>
-          <Typography variant="body2" color="text.secondary" align="center">
-            © {CURRENT_YEAR} {libraryName}
-          </Typography>
-        </Container>
-      </Box>
+      <SiteFooter />
     </Box>
   )
 }

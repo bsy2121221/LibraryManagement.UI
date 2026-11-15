@@ -1,9 +1,9 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { settingsApi } from '../api/endpoints'
 
-// Library name, monthly fee and hold time, loaded once and shared by every component.
+// Library name, monthly fee, hold time and footer details, loaded once and shared by every component.
 // refreshPublicSettings() reloads them (the admin Settings page calls it after saving).
-const DEFAULTS = { libraryName: 'My Library', monthlyFee: null, seatHoldMinutes: 7, currency: 'INR' }
+const DEFAULTS = { libraryName: 'My Library', monthlyFee: null, seatHoldMinutes: 7, currency: 'INR', footer: {} }
 
 let current = DEFAULTS
 let loaded = false

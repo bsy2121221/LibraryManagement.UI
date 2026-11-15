@@ -12,6 +12,7 @@ import {
   TextField,
 } from '@mui/material'
 import { useState } from 'react'
+import MediaPickerDialog from '../../components/MediaPickerDialog'
 import { sectionsApi } from '../../api/endpoints'
 import { getErrorMessage, getFieldErrors } from '../../utils/errors'
 
@@ -24,6 +25,7 @@ export default function SectionFormDialog({ open, section, onClose, onSaved }) {
   const [fieldErrors, setFieldErrors] = useState({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const setField = (field, parse = (v) => v) => (event) => {
     const value = event.target.type === 'checkbox' ? event.target.checked : parse(event.target.value)
@@ -88,12 +90,27 @@ export default function SectionFormDialog({ open, section, onClose, onSaved }) {
               helperText={fieldErrors.layoutHeight || 'A seat is 44 units wide'}
             />
           </Stack>
-          <TextField
-            label="Background image URL (optional)"
-            value={form.backgroundImageUrl}
-            onChange={setField('backgroundImageUrl')}
-            {...fieldProps('backgroundImageUrl')}
-            helperText={fieldErrors.backgroundImageUrl || 'A floor plan picture shown behind the seats. Upload comes with the media library.'}
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+            <TextField
+              label="Background image (optional)"
+              value={form.backgroundImageUrl}
+              onChange={setField('backgroundImageUrl')}
+              fullWidth
+              {...fieldProps('backgroundImageUrl')}
+              helperText={fieldErrors.backgroundImageUrl || 'A floor plan picture shown behind the seats'}
+            />
+            <Button variant="outlined" onClick={() => setPickerOpen(true)} sx={{ mt: 1, flexShrink: 0 }}>
+              Choose
+            </Button>
+          </Stack>
+          <MediaPickerDialog
+            open={pickerOpen}
+            selectedUrl={form.backgroundImageUrl}
+            onClose={() => setPickerOpen(false)}
+            onSelect={(url) => {
+              setForm((f) => ({ ...f, backgroundImageUrl: url }))
+              setPickerOpen(false)
+            }}
           />
           <TextField
             label="Display order"

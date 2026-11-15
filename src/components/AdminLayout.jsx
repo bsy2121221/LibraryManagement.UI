@@ -12,6 +12,7 @@ import {
 } from '@mui/material'
 import EventSeat from '@mui/icons-material/EventSeat'
 import Home from '@mui/icons-material/Home'
+import Web from '@mui/icons-material/Web'
 import Logout from '@mui/icons-material/Logout'
 import People from '@mui/icons-material/People'
 import School from '@mui/icons-material/School'
@@ -24,7 +25,7 @@ import { useAuth } from '../auth/AuthContext'
 
 const DRAWER_WIDTH = 230
 
-// Menu entries for the admin area. A later step adds the Home page builder.
+// Menu entries for the admin area
 const NAV_ITEMS = [
   { to: '/admin/sections', label: 'Sections & seats', icon: <EventSeat /> },
   { to: '/admin/bookings', label: 'Students on seats', icon: <People /> },
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { to: '/admin/fees', label: 'Fees', icon: <Payments /> },
   { to: '/admin/messages', label: 'Messages', icon: <Sms /> },
   { to: '/admin/notification-settings', label: 'Message settings', icon: <NotificationsActive /> },
+  { to: '/admin/home-page', label: 'Home page', icon: <Web /> },
   { to: '/admin/settings', label: 'Settings', icon: <Settings /> },
 ]
 

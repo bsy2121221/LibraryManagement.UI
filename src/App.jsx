@@ -13,6 +13,7 @@ import BookingsPage from './pages/admin/BookingsPage'
 import SectionDesignerPage from './pages/admin/SectionDesignerPage'
 import SectionsPage from './pages/admin/SectionsPage'
 import FeesPage from './pages/admin/FeesPage'
+import HomePageBuilderPage from './pages/admin/HomePageBuilderPage'
 import MessagesPage from './pages/admin/MessagesPage'
 import NotificationSettingsPage from './pages/admin/NotificationSettingsPage'
 import SettingsPage from './pages/admin/SettingsPage'
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
           { path: 'fees', element: <FeesPage /> },
           { path: 'messages', element: <MessagesPage /> },
           { path: 'notification-settings', element: <NotificationSettingsPage /> },
+          { path: 'home-page', element: <HomePageBuilderPage /> },
         ],
       },
     ],

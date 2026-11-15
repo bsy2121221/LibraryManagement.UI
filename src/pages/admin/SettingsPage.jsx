@@ -16,7 +16,12 @@ function validate(setting, value) {
   } else if (setting.dataType === 'decimal') {
     if (!/^-?\d+(\.\d{1,2})?$/.test(v)) return 'Enter a number with at most 2 decimals.'
     if ((setting.min != null && +v < setting.min) || (setting.max != null && +v > setting.max)) return `Must be${range}.`
-  } else if (setting.dataType === 'string') {
+  } else if (setting.dataType === 'url') {
+    if (v && !/^https?:\/\/\S+$/i.test(v)) return 'Enter a full link starting with https://'
+  } else if (setting.dataType === 'email') {
+    if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Enter a valid email address.'
+  }
+  if (['string', 'url', 'email'].includes(setting.dataType)) {
     if (setting.min != null && v.length < setting.min) return `At least ${setting.min} characters.`
     if (setting.max != null && v.length > setting.max) return `At most ${setting.max} characters.`
   }
@@ -121,6 +126,7 @@ export default function SettingsPage() {
                     value={values[s.key] ?? ''}
                     onChange={(e) => setValues((v) => ({ ...v, [s.key]: e.target.value }))}
                     type={isNumber ? 'number' : 'text'}
+                    multiline={s.key === 'LibraryAddress'}
                     error={!!fieldError}
                     helperText={
                       fieldError ||
@@ -140,7 +146,7 @@ export default function SettingsPage() {
       </Stack>
 
       <Alert severity="info" sx={{ mt: 2 }}>
-        The billing & overdue settings are used by the monthly fee and reminder jobs (coming in the next step).
+        The website footer has a fixed design. Fill in the details above and they appear on every page; empty ones are hidden.
       </Alert>
 
       <Snackbar open={!!toast} autoHideDuration={2500} onClose={() => setToast('')} message={toast} />
