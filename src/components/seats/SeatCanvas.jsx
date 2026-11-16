@@ -3,7 +3,18 @@ import { safeImage } from '../home/blockTypes'
 
 // The floor plan of one section. Keeps the section's aspect ratio at any screen width;
 // children are positioned with seatBoxStyle() in percentages so they scale with it.
-export default function SeatCanvas({ ref, layoutWidth, layoutHeight, backgroundImageUrl, showGrid = false, children, sx, ...rest }) {
+export default function SeatCanvas({
+  ref,
+  layoutWidth,
+  layoutHeight,
+  backgroundImageUrl,
+  showGrid = false,
+  // Designer needs 'none' so seat drag works; public map uses pan for scroll/zoom.
+  touchAction = 'none',
+  children,
+  sx,
+  ...rest
+}) {
   const gridSize = `${(20 / layoutWidth) * 100}% ${(20 / layoutHeight) * 100}%`
   const imageUrl = safeImage(backgroundImageUrl)
 
@@ -19,7 +30,7 @@ export default function SeatCanvas({ ref, layoutWidth, layoutHeight, backgroundI
         borderColor: 'divider',
         overflow: 'hidden',
         userSelect: 'none',
-        touchAction: 'none',
+        touchAction,
         bgcolor: '#fafaf7',
         backgroundImage: [
           showGrid && 'linear-gradient(#e8e8e3 1px, transparent 1px), linear-gradient(90deg, #e8e8e3 1px, transparent 1px)',

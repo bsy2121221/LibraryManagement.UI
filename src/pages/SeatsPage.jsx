@@ -22,7 +22,7 @@ import { bookingsApi, seatMapApi } from '../api/endpoints'
 import { useAuth } from '../auth/AuthContext'
 import { usePublicSettings } from '../hooks/usePublicSettings'
 import SeatBox, { SeatLegend } from '../components/seats/SeatBox'
-import SeatCanvas from '../components/seats/SeatCanvas'
+import SeatMapViewport from '../components/seats/SeatMapViewport'
 import { seatBoxStyle } from '../components/seats/seatGeometry'
 import { getErrorMessage } from '../utils/errors'
 import { formatMoney, sectionLabel } from '../utils/format'
@@ -212,7 +212,7 @@ export default function SeatsPage() {
             />
           </Stack>
 
-          <SeatCanvas layoutWidth={section.layoutWidth} layoutHeight={section.layoutHeight} backgroundImageUrl={section.backgroundImageUrl}>
+          <SeatMapViewport layoutWidth={section.layoutWidth} layoutHeight={section.layoutHeight} backgroundImageUrl={section.backgroundImageUrl}>
             {section.seats.map((seat) => (
               <SeatBox
                 key={seat.id}
@@ -224,7 +224,7 @@ export default function SeatsPage() {
                 onClick={() => handleSeatClick(seat)}
               />
             ))}
-          </SeatCanvas>
+          </SeatMapViewport>
         </Paper>
       )}
 

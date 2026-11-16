@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { seatMapApi } from '../../api/endpoints'
 import { getErrorMessage } from '../../utils/errors'
 import SeatBox, { SeatLegend } from './SeatBox'
-import SeatCanvas from './SeatCanvas'
+import SeatMapViewport from './SeatMapViewport'
 import { seatBoxStyle } from './seatGeometry'
 
 // Admin picks a free seat in a section for the given gender.
@@ -62,7 +62,7 @@ export default function SeatPicker({ gender, currentSeatId, preferredSectionId, 
           { color: 'occupied', label: 'Taken' },
         ]}
       />
-      <SeatCanvas layoutWidth={section.layoutWidth} layoutHeight={section.layoutHeight} backgroundImageUrl={section.backgroundImageUrl}>
+      <SeatMapViewport layoutWidth={section.layoutWidth} layoutHeight={section.layoutHeight} backgroundImageUrl={section.backgroundImageUrl}>
         {section.seats.map((seat) => {
           const selectable = seat.availability === 'Available'
           return (
@@ -77,7 +77,7 @@ export default function SeatPicker({ gender, currentSeatId, preferredSectionId, 
             />
           )
         })}
-      </SeatCanvas>
+      </SeatMapViewport>
     </Stack>
   )
 }

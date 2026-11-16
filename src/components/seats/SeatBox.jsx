@@ -20,7 +20,9 @@ export default function SeatBox({ label, color, selected = false, interactive = 
         boxShadow: selected ? '0 0 0 3px rgba(255,202,40,.6)' : '0 1px 2px rgba(0,0,0,.25)',
         borderRadius: '6px 6px 10px 10px',
         borderBottomWidth: 5,
-        fontSize: 'clamp(8px, 1.1vw, 13px)',
+        // Size the label relative to the seat tile so it stays readable when the map zooms.
+        containerType: 'size',
+        fontSize: 'clamp(10px, 32cqmin, 15px)',
         fontWeight: 700,
         lineHeight: 1,
         overflow: 'hidden',
