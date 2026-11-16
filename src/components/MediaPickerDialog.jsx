@@ -18,6 +18,7 @@ import Delete from '@mui/icons-material/Delete'
 import Upload from '@mui/icons-material/Upload'
 import { useEffect, useRef, useState } from 'react'
 import { mediaApi } from '../api/endpoints'
+import { safeImage } from './home/blockTypes'
 import { getErrorMessage } from '../utils/errors'
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif'
@@ -145,7 +146,7 @@ export default function MediaPickerDialog({ open, onClose, onSelect, selectedUrl
                     disabled={!onSelect}
                     sx={{ p: 0, border: 0, display: 'block', width: '100%', cursor: onSelect ? 'pointer' : 'default', bgcolor: 'transparent' }}
                   >
-                    <Box component="img" src={asset.url} alt={asset.fileName} loading="lazy" sx={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block' }} />
+                    <Box component="img" src={safeImage(asset.url) || asset.url} alt={asset.fileName} loading="lazy" sx={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block' }} />
                   </Box>
                   <Stack direction="row" sx={{ alignItems: 'center', px: 1, py: 0.5 }}>
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>

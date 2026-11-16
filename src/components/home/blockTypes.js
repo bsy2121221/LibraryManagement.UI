@@ -268,10 +268,28 @@ export function safeLink(value) {
   return null
 }
 
+// API origin for uploaded files. In dev (VITE_API_BASE_URL=/api) this is empty and
+// Vite/Vercel proxies /uploads to the API. In production with an absolute API URL,
+// relative paths like /uploads/... must be rewritten to that host or the browser
+// would request them from the Vercel frontend and get 404.
+function apiOrigin() {
+  const base = import.meta.env.VITE_API_BASE_URL || '/api'
+  if (!/^https?:\/\//i.test(base)) return ''
+  try {
+    return new URL(base).origin
+  } catch {
+    return ''
+  }
+}
+
 // Images: an uploaded file ("/uploads/...") or a full https:// address
 export function safeImage(value) {
   const url = String(value ?? '').trim()
   if (!url) return null
-  if ((url.startsWith('/') && !url.startsWith('//')) || /^https?:\/\//i.test(url)) return url
+  if (/^https?:\/\//i.test(url)) return url
+  if (url.startsWith('/') && !url.startsWith('//')) {
+    const origin = apiOrigin()
+    return origin ? `${origin}${url}` : url
+  }
   return null
 }

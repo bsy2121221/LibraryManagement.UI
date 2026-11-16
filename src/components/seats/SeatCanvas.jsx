@@ -1,9 +1,11 @@
 import { Box } from '@mui/material'
+import { safeImage } from '../home/blockTypes'
 
 // The floor plan of one section. Keeps the section's aspect ratio at any screen width;
 // children are positioned with seatBoxStyle() in percentages so they scale with it.
 export default function SeatCanvas({ ref, layoutWidth, layoutHeight, backgroundImageUrl, showGrid = false, children, sx, ...rest }) {
   const gridSize = `${(20 / layoutWidth) * 100}% ${(20 / layoutHeight) * 100}%`
+  const imageUrl = safeImage(backgroundImageUrl)
 
   return (
     <Box
@@ -21,11 +23,11 @@ export default function SeatCanvas({ ref, layoutWidth, layoutHeight, backgroundI
         bgcolor: '#fafaf7',
         backgroundImage: [
           showGrid && 'linear-gradient(#e8e8e3 1px, transparent 1px), linear-gradient(90deg, #e8e8e3 1px, transparent 1px)',
-          backgroundImageUrl && `url("${backgroundImageUrl}")`,
+          imageUrl && `url("${imageUrl}")`,
         ]
           .filter(Boolean)
           .join(', '),
-        backgroundSize: [showGrid && `${gridSize}, ${gridSize}`, backgroundImageUrl && 'cover'].filter(Boolean).join(', '),
+        backgroundSize: [showGrid && `${gridSize}, ${gridSize}`, imageUrl && 'cover'].filter(Boolean).join(', '),
         backgroundPosition: 'center',
         ...sx,
       }}
