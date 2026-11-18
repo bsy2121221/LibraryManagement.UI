@@ -21,6 +21,7 @@ import {
 import Autorenew from '@mui/icons-material/Autorenew'
 import { useState } from 'react'
 import { studentsApi } from '../../api/endpoints'
+import { FEE_START_MAX, FEE_START_MIN, formatDate, isValidFeeStartDate, todayInIndia } from '../../utils/format'
 import { getErrorMessage, getFieldErrors } from '../../utils/errors'
 
 const EMPTY = { fullName: '', mobile: '', password: '', gender: '', address: '', email: '' }
@@ -44,10 +45,12 @@ function validate(form) {
   return e
 }
 
-// Admin registers a walk-in student. onCreated(detail, password, assignSeatNext)
+// Admin registers a walk-in student. onCreated(detail, password, assignSeatNext, feeStartDate)
 export default function AddStudentDialog({ onClose, onCreated }) {
   const [form, setForm] = useState(() => ({ ...EMPTY, password: generatePassword() }))
   const [assignNext, setAssignNext] = useState(true)
+  // When the student's fees start; existing students being moved into the system often started earlier
+  const [feeStartDate, setFeeStartDate] = useState(todayInIndia())
   const [fieldErrors, setFieldErrors] = useState({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -61,6 +64,7 @@ export default function AddStudentDialog({ onClose, onCreated }) {
 
   const handleSave = async () => {
     const errors = validate(form)
+    if (assignNext && !isValidFeeStartDate(feeStartDate)) errors.feeStartDate = 'Must be within the last year and at most 60 days ahead.'
     setFieldErrors(errors)
     if (Object.keys(errors).length) return
 
@@ -68,7 +72,7 @@ export default function AddStudentDialog({ onClose, onCreated }) {
     setError('')
     try {
       const detail = await studentsApi.create({ ...form, email: form.email.trim() || null })
-      onCreated(detail, form.password, assignNext)
+      onCreated(detail, form.password, assignNext, feeStartDate)
     } catch (err) {
       setFieldErrors(getFieldErrors(err))
       setError(getErrorMessage(err))
@@ -123,6 +127,23 @@ export default function AddStudentDialog({ onClose, onCreated }) {
             control={<Checkbox checked={assignNext} onChange={(e) => setAssignNext(e.target.checked)} />}
             label="Assign a seat next"
           />
+          {assignNext && (
+            <TextField
+              label="Fee start date"
+              type="date"
+              value={feeStartDate}
+              onChange={(e) => {
+                setFeeStartDate(e.target.value)
+                setFieldErrors((er) => ({ ...er, feeStartDate: undefined }))
+              }}
+              error={!!fieldErrors.feeStartDate}
+              helperText={
+                fieldErrors.feeStartDate ||
+                `The first month's fee and every next due date are counted from ${feeStartDate ? formatDate(feeStartDate) : 'this date'}. Change it for students who joined earlier.`
+              }
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: FEE_START_MIN(), max: FEE_START_MAX() } }}
+            />
+          )}
         </Stack>
       </DialogContent>
       <DialogActions>

@@ -76,6 +76,8 @@ export default function StudentDetailPage() {
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState(0)
   const [dialog, setDialog] = useState(() => (searchParams.get('assign') === '1' ? 'assign' : null)) // 'move' | 'release' | 'password' | 'assign' | 'fee'
+  // Fee start date the admin picked while adding the student (used once by the first 'assign seat' dialog)
+  const [feeStartDate, setFeeStartDate] = useState(() => searchParams.get('feeStart'))
   const [payingFee, setPayingFee] = useState(null)
   const [messages, setMessages] = useState(null)
 
@@ -101,7 +103,7 @@ export default function StudentDetailPage() {
   // Do not keep the password in browser history, and do not reopen 'assign seat' on refresh
   useEffect(() => {
     if (location.state?.created) navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
-    if (searchParams.get('assign')) setSearchParams({}, { replace: true })
+    if (searchParams.get('assign') || searchParams.get('feeStart')) setSearchParams({}, { replace: true })
   }, [location, navigate, searchParams, setSearchParams])
 
   // Messages are loaded when their tab is opened
@@ -461,7 +463,18 @@ export default function StudentDetailPage() {
         />
       )}
       {dialog === 'assign' && (
-        <AssignSeatDialog student={profile} onClose={() => setDialog(null)} onAssigned={afterSeatChange} />
+        <AssignSeatDialog
+          student={profile}
+          initialStartDate={feeStartDate}
+          onClose={() => {
+            setFeeStartDate(null)
+            setDialog(null)
+          }}
+          onAssigned={(message) => {
+            setFeeStartDate(null)
+            afterSeatChange(message)
+          }}
+        />
       )}
       {dialog === 'fee' && (
         <AddFeeDialog

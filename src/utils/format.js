@@ -68,3 +68,8 @@ export function addDays(iso, days) {
   const [y, m, d] = iso.split('-').map(Number)
   return toIso(new Date(y, m - 1, d + days))
 }
+
+// Fee start date range the API accepts for a seat assigned by the admin
+export const FEE_START_MIN = () => addMonths(todayInIndia(), -12)
+export const FEE_START_MAX = () => addDays(todayInIndia(), 60)
+export const isValidFeeStartDate = (iso) => !!iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) && iso >= FEE_START_MIN() && iso <= FEE_START_MAX()

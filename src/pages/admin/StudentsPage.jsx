@@ -161,8 +161,8 @@ export default function StudentsPage() {
       {adding && (
         <AddStudentDialog
           onClose={() => setAdding(false)}
-          onCreated={(detail, password, assignSeatNext) =>
-            navigate(`/admin/students/${detail.profile.id}${assignSeatNext ? '?assign=1' : ''}`, {
+          onCreated={(detail, password, assignSeatNext, feeStartDate) =>
+            navigate(`/admin/students/${detail.profile.id}${assignSeatNext ? `?assign=1&feeStart=${feeStartDate}` : ''}`, {
               state: { created: { password, mobile: detail.profile.mobile } },
             })
           }

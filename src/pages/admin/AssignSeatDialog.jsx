@@ -17,14 +17,15 @@ import { studentsApi } from '../../api/endpoints'
 import SeatPicker from '../../components/seats/SeatPicker'
 import { usePublicSettings } from '../../hooks/usePublicSettings'
 import { getErrorMessage } from '../../utils/errors'
-import { addDays, addMonths, formatDate, formatMoney, todayInIndia } from '../../utils/format'
+import { addDays, addMonths, FEE_START_MAX, FEE_START_MIN, formatDate, formatMoney, isValidFeeStartDate, todayInIndia } from '../../utils/format'
+
 
 // Give a walk-in student a seat at the desk: no online hold or payment.
 // The first month is recorded as paid now, or as due on the start date.
-export default function AssignSeatDialog({ student, onClose, onAssigned }) {
+export default function AssignSeatDialog({ student, initialStartDate, onClose, onAssigned }) {
   const { monthlyFee } = usePublicSettings()
   const [seat, setSeat] = useState(null)
-  const [startDate, setStartDate] = useState(todayInIndia())
+  const [startDate, setStartDate] = useState(() => (isValidFeeStartDate(initialStartDate) ? initialStartDate : todayInIndia()))
   const [amount, setAmount] = useState('')
   const [paidAtDesk, setPaidAtDesk] = useState(true)
   const [note, setNote] = useState('')
@@ -33,6 +34,7 @@ export default function AssignSeatDialog({ student, onClose, onAssigned }) {
 
   const fee = amount === '' ? monthlyFee : Number(amount)
   const periodEnd = startDate ? addDays(addMonths(startDate, 1), -1) : null
+  const startDateOk = isValidFeeStartDate(startDate)
 
   const handleAssign = async () => {
     setBusy(true)
@@ -66,12 +68,19 @@ export default function AssignSeatDialog({ student, onClose, onAssigned }) {
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
-              label="Start date"
+              label="Fee start date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
-              helperText={periodEnd ? `First month: ${formatDate(startDate)} – ${formatDate(periodEnd)}` : ' '}
+              error={!!startDate && !startDateOk}
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: FEE_START_MIN(), max: FEE_START_MAX() } }}
+              helperText={
+                startDate && !startDateOk
+                  ? 'Must be within the last year and at most 60 days ahead.'
+                  : periodEnd
+                    ? `First month: ${formatDate(startDate)} – ${formatDate(periodEnd)}`
+                    : ' '
+              }
             />
             <TextField
               label="First month's fee"
@@ -98,7 +107,7 @@ export default function AssignSeatDialog({ student, onClose, onAssigned }) {
         <Button onClick={onClose} disabled={busy}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={handleAssign} disabled={!seat || !startDate || busy}>
+        <Button variant="contained" onClick={handleAssign} disabled={!seat || !startDateOk || busy}>
           {busy ? 'Assigning…' : 'Assign seat'}
         </Button>
       </DialogActions>
