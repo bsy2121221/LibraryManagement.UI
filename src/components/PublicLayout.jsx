@@ -84,7 +84,17 @@ export default function PublicLayout() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      <AppBar position="sticky" elevation={0} color="inherit" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <AppBar
+        position="sticky"
+        elevation={0}
+        color="inherit"
+        sx={{
+          borderBottom: 1,
+          borderColor: 'rgba(15,21,53,0.08)',
+          bgcolor: 'rgba(255,255,255,0.82)',
+          backdropFilter: 'saturate(180%) blur(14px)',
+        }}
+      >
         <Toolbar sx={{ gap: 0.5, minHeight: { xs: 56, sm: 64 }, px: { xs: 1, sm: 2 } }}>
           {isMobile && (
             <IconButton edge="start" color="inherit" aria-label="Open menu" onClick={() => setDrawerOpen(true)} sx={{ mr: 0.5 }}>

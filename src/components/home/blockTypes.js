@@ -243,9 +243,60 @@ export function createBlock(type) {
   return { id: newId(), type, ...structuredClone(BLOCK_TYPES[type].defaults) }
 }
 
+// Photos of the library shipped with the website (public/images)
+export const LIBRARY_PHOTOS = {
+  hero: '/images/hero.jpeg',
+  wide: ['/images/library-1.jpeg', '/images/library-3.jpeg', '/images/library-7.jpeg', '/images/library-8.jpeg'],
+  tall: ['/images/library-2.jpeg', '/images/library-4.jpeg', '/images/library-5.jpeg', '/images/library-6.jpeg', '/images/library-9.jpeg'],
+}
+
 // Shown until the admin publishes a design of their own
 export function defaultLayout() {
-  return { blocks: ['hero', 'features', 'pricing', 'cta'].map(createBlock) }
+  const block = (type, overrides = {}) => ({ ...createBlock(type), ...overrides })
+  return {
+    blocks: [
+      block('hero', {
+        image: LIBRARY_PHOTOS.hero,
+        secondaryButtonText: 'Take a tour',
+        secondaryButtonLink: '#gallery',
+      }),
+      block('features', {
+        subtitle: 'Everything you need for long, distraction-free study hours - under one roof.',
+        items: [
+          ...BLOCK_TYPES.features.defaults.items,
+          { icon: 'power', title: 'Charging points', text: 'A power socket at every desk for your laptop and phone.' },
+          { icon: 'cctv', title: 'CCTV secured', text: 'Round-the-clock camera coverage for your peace of mind.' },
+          { icon: 'water', title: 'Drinking water', text: 'Clean RO drinking water available all day.' },
+          { icon: 'quiet', title: 'Silent zone', text: 'A strict no-noise policy so you can go deep into focus.' },
+        ],
+      }),
+      block('imageText', {
+        image: LIBRARY_PHOTOS.wide[0],
+        body: 'Comfortable chairs, personal lamps and a strict silence policy help you stay focused all day. Whether you are preparing for competitive exams or working on your degree, {LibraryName} gives you the calm you need.',
+        buttonText: 'Find your seat',
+        buttonLink: '/seats',
+        background: 'light',
+      }),
+      block('gallery', {
+        id: 'gallery',
+        subtitle: 'Real photos from our study halls.',
+        background: 'white',
+        images: [
+          { url: LIBRARY_PHOTOS.wide[1], caption: '' },
+          { url: LIBRARY_PHOTOS.tall[0], caption: '' },
+          { url: LIBRARY_PHOTOS.tall[1], caption: '' },
+          { url: LIBRARY_PHOTOS.wide[2], caption: '' },
+          { url: LIBRARY_PHOTOS.tall[2], caption: '' },
+          { url: LIBRARY_PHOTOS.tall[3], caption: '' },
+          { url: LIBRARY_PHOTOS.wide[3], caption: '' },
+          { url: LIBRARY_PHOTOS.tall[4], caption: '' },
+        ],
+      }),
+      block('pricing'),
+      block('faq', { background: 'light' }),
+      block('cta'),
+    ],
+  }
 }
 
 // Keeps only blocks the website understands and fills missing fields with defaults
@@ -282,13 +333,14 @@ function apiOrigin() {
   }
 }
 
-// Images: an uploaded file ("/uploads/...") or a full https:// address
+// Images: an uploaded file ("/uploads/..."), a picture shipped with the website ("/images/...")
+// or a full https:// address. Only uploads live on the API host.
 export function safeImage(value) {
   const url = String(value ?? '').trim()
   if (!url) return null
   if (/^https?:\/\//i.test(url)) return url
   if (url.startsWith('/') && !url.startsWith('//')) {
-    const origin = apiOrigin()
+    const origin = url.startsWith('/uploads/') ? apiOrigin() : ''
     return origin ? `${origin}${url}` : url
   }
   return null
